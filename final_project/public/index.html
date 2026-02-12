@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookHub - Discover Your Next Great Read</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">📚 BookHub</a>
+            <ul class="navbar-nav">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/search.html" class="nav-link">Search</a></li>
+                <li><a href="/login.html" class="nav-link">Login</a></li>
+                <li><a href="/register.html" class="nav-link">Register</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Discover Your Next Great Read</h1>
+            <p class="hero-subtitle">Explore timeless classics, share your thoughts, and connect with fellow book lovers</p>
+            <div class="search-container">
+                <input type="text" id="quickSearch" class="search-input" placeholder="Quick search by title or author...">
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div id="bookGrid" class="book-grid">
+            <div class="loading">Loading books</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 BookHub. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Load all books on page load
+        async function loadBooks() {
+            const books = await API.getAllBooks();
+            const bookGrid = document.getElementById('bookGrid');
+            
+            if (Object.keys(books).length === 0) {
+                bookGrid.innerHTML = '<p class="loading">No books found</p>';
+                return;
+            }
+            
+            bookGrid.innerHTML = '';
+            
+            for (const [isbn, book] of Object.entries(books)) {
+                const bookCard = document.createElement('a');
+                bookCard.href = `/book-detail.html?isbn=${isbn}`;
+                bookCard.className = 'book-card';
+                bookCard.innerHTML = `
+                    <img src="${book.cover}" alt="${book.title}" class="book-cover" onerror="this.src='https://via.placeholder.com/280x350?text=No+Cover'">
+                    <div class="book-info">
+                        <h3 class="book-title">${book.title}</h3>
+                        <p class="book-author">by ${book.author}</p>
+                        <div class="book-rating">
+                            <span class="stars">${generateStars(book.rating)}</span>
+                            <span class="rating-value">${book.rating}/5</span>
+                        </div>
+                    </div>
+                `;
+                bookGrid.appendChild(bookCard);
+            }
+        }
+
+        // Quick search functionality
+        document.getElementById('quickSearch').addEventListener('input', async (e) => {
+            const query = e.target.value.toLowerCase();
+            const books = await API.getAllBooks();
+            const bookGrid = document.getElementById('bookGrid');
+            
+            if (!query) {
+                loadBooks();
+                return;
+            }
+            
+            const filtered = Object.entries(books).filter(([isbn, book]) => 
+                book.title.toLowerCase().includes(query) || 
+                book.author.toLowerCase().includes(query)
+            );
+            
+            bookGrid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                bookGrid.innerHTML = '<p class="loading">No books found matching your search</p>';
+                return;
+            }
+            
+            filtered.forEach(([isbn, book]) => {
+                const bookCard = document.createElement('a');
+                bookCard.href = `/book-detail.html?isbn=${isbn}`;
+                bookCard.className = 'book-card';
+                bookCard.innerHTML = `
+                    <img src="${book.cover}" alt="${book.title}" class="book-cover" onerror="this.src='https://via.placeholder.com/280x350?text=No+Cover'">
+                    <div class="book-info">
+                        <h3 class="book-title">${book.title}</h3>
+                        <p class="book-author">by ${book.author}</p>
+                        <div class="book-rating">
+                            <span class="stars">${generateStars(book.rating)}</span>
+                            <span class="rating-value">${book.rating}/5</span>
+                        </div>
+                    </div>
+                `;
+                bookGrid.appendChild(bookCard);
+            });
+        });
+
+        // Initialize
+        loadBooks();
+    </script>
+</body>
+</html>

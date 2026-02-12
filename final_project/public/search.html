@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Books - BookHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">📚 BookHub</a>
+            <ul class="navbar-nav"></ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container" style="max-width: 700px;">
+            <h2 class="form-title">Search Books</h2>
+
+            <div class="form-group">
+                <label for="searchType" class="form-label">Search By</label>
+                <select id="searchType" class="form-control">
+                    <option value="title">Title</option>
+                    <option value="author">Author</option>
+                    <option value="isbn">ISBN</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="searchQuery" class="form-label">Search Query</label>
+                <input type="text" id="searchQuery" class="form-control" placeholder="Enter search term...">
+            </div>
+
+            <button onclick="performSearch()" class="btn btn-primary" style="width: 100%;">Search</button>
+        </div>
+
+        <div id="searchResults" class="book-grid" style="margin-top: 3rem;"></div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 BookHub. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        async function performSearch() {
+            const searchType = document.getElementById('searchType').value;
+            const query = document.getElementById('searchQuery').value.trim();
+            const resultsDiv = document.getElementById('searchResults');
+
+            if (!query) {
+                resultsDiv.innerHTML = '<p class="loading">Please enter a search term</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">Searching</div>';
+
+            let results = [];
+
+            if (searchType === 'title') {
+                results = await API.searchByTitle(query);
+            } else if (searchType === 'author') {
+                results = await API.searchByAuthor(query);
+            } else if (searchType === 'isbn') {
+                const book = await API.getBookByISBN(query);
+                results = book ? [book] : [];
+            }
+
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = '<p class="loading">No books found matching your search</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '';
+
+            results.forEach((book, index) => {
+                // For ISBN search, we need to find the ISBN from all books
+                let isbn = query; // Default for ISBN search
+
+                // For title/author search, we need to find the ISBN
+                if (searchType !== 'isbn') {
+                    // We'll need to get all books to find the ISBN
+                    API.getAllBooks().then(allBooks => {
+                        for (const [id, b] of Object.entries(allBooks)) {
+                            if (b.title === book.title && b.author === book.author) {
+                                isbn = id;
+                                break;
+                            }
+                        }
+                    });
+                    isbn = index + 1; // Temporary fallback
+                }
+
+                const bookCard = document.createElement('a');
+                bookCard.href = `/book-detail.html?isbn=${isbn}`;
+                bookCard.className = 'book-card';
+                bookCard.innerHTML = `
+                    <img src="${book.cover || 'https://via.placeholder.com/280x350?text=No+Cover'}" alt="${book.title}" class="book-cover" onerror="this.src='https://via.placeholder.com/280x350?text=No+Cover'">
+                    <div class="book-info">
+                        <h3 class="book-title">${book.title}</h3>
+                        <p class="book-author">by ${book.author}</p>
+                        ${book.rating ? `
+                            <div class="book-rating">
+                                <span class="stars">${generateStars(book.rating)}</span>
+                                <span class="rating-value">${book.rating}/5</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                resultsDiv.appendChild(bookCard);
+            });
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+
+</html>

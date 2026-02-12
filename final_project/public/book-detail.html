@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Details - BookHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">📚 BookHub</a>
+            <ul class="navbar-nav"></ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="bookDetail">
+            <div class="loading">Loading book details</div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 BookHub. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        async function loadBookDetail() {
+            const params = new URLSearchParams(window.location.search);
+            const isbn = params.get('isbn');
+
+            if (!isbn) {
+                document.getElementById('bookDetail').innerHTML = '<p class="loading">Book not found</p>';
+                return;
+            }
+
+            const book = await API.getBookByISBN(isbn);
+            const reviews = await API.getReviews(isbn);
+
+            if (!book) {
+                document.getElementById('bookDetail').innerHTML = '<p class="loading">Book not found</p>';
+                return;
+            }
+
+            const detailHTML = `
+                <div class="book-detail">
+                    <div>
+                        <img src="${book.cover}" alt="${book.title}" class="book-detail-cover" onerror="this.src='https://via.placeholder.com/400x600?text=No+Cover'">
+                    </div>
+                    <div class="book-detail-info">
+                        <h1>${book.title}</h1>
+                        <h2>by ${book.author}</h2>
+                        <div class="book-rating">
+                            <span class="stars" style="font-size: 1.5rem;">${generateStars(book.rating)}</span>
+                            <span class="rating-value" style="font-size: 1.2rem;">${book.rating}/5</span>
+                        </div>
+                        <p class="book-description">${book.description}</p>
+                        <p><strong>Published:</strong> ${book.year}</p>
+                        <p><strong>ISBN:</strong> ${book.isbn}</p>
+                    </div>
+                </div>
+
+                <div class="reviews-section">
+                    <h3>Reviews</h3>
+                    <div id="reviewsList"></div>
+                    ${Auth.isLoggedIn() ? `
+                        <div class="form-container" style="margin-top: 2rem;">
+                            <h4 class="form-title" style="font-size: 1.5rem;">Add Your Review</h4>
+                            <form id="reviewForm">
+                                <div class="form-group">
+                                    <textarea id="reviewText" class="form-control" rows="4" placeholder="Share your thoughts about this book..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                            </form>
+                        </div>
+                    ` : '<p style="text-align: center; margin-top: 2rem;"><a href="/login.html" class="btn btn-primary">Login to add a review</a></p>'}
+                </div>
+            `;
+
+            document.getElementById('bookDetail').innerHTML = detailHTML;
+
+            // Display reviews
+            const reviewsList = document.getElementById('reviewsList');
+            if (Object.keys(reviews).length === 0) {
+                reviewsList.innerHTML = '<p>No reviews yet. Be the first to review this book!</p>';
+            } else {
+                reviewsList.innerHTML = Object.entries(reviews).map(([username, review]) => `
+                    <div class="review-card">
+                        <p class="review-author">${username}</p>
+                        <p class="review-text">${review}</p>
+                        ${Auth.getUsername() === username ? `
+                            <button onclick="deleteReview('${isbn}')" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Delete Review</button>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+
+            // Handle review submission
+            if (Auth.isLoggedIn()) {
+                document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const reviewText = document.getElementById('reviewText').value;
+                    const result = await API.addReview(isbn, reviewText);
+
+                    if (result.message.includes('added') || result.message.includes('updated')) {
+                        showAlert('Review submitted successfully!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showAlert('Failed to submit review', 'error');
+                    }
+                });
+            }
+        }
+
+        async function deleteReview(isbn) {
+            if (confirm('Are you sure you want to delete your review?')) {
+                const result = await API.deleteReview(isbn);
+                if (result.message.includes('deleted')) {
+                    showAlert('Review deleted successfully!');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('Failed to delete review', 'error');
+                }
+            }
+        }
+
+        loadBookDetail();
+    </script>
+</body>
+
+</html>
