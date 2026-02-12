@@ -31,6 +31,7 @@ const Auth = {
             navLinks.innerHTML = `
         <li><a href="/" class="nav-link">Home</a></li>
         <li><a href="/search.html" class="nav-link">Search</a></li>
+        <li><a href="/add-book.html" class="nav-link">Add Book</a></li>
         <li><span class="nav-link">Welcome, ${username}</span></li>
         <li><a href="#" onclick="Auth.logout(); return false;" class="nav-link">Logout</a></li>
       `;

@@ -8,9 +8,6 @@ const app = express();
 
 app.use(express.json());
 
-// Serve static files from the public directory
-app.use(express.static('public'));
-
 app.use(
   "/customer",
   session({
@@ -38,7 +35,11 @@ app.use("/customer/auth/*", (req, res, next) => {
 
 const PORT = 5000;
 
+// IMPORTANT: API routes MUST come BEFORE static file serving
+app.use("/api", genl_routes);
 app.use("/customer", customer_routes);
-app.use("/", genl_routes);
+
+// Serve static files AFTER API routes
+app.use(express.static('public'));
 
 app.listen(PORT, () => console.log("Server is running on port 5000"));

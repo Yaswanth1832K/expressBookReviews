@@ -1,5 +1,5 @@
 // API Base URL
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'http://localhost:5000/api';
 
 // API Client Functions
 const API = {
