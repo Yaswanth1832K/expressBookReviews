@@ -22,7 +22,7 @@ public_users.post("/register", (req, res) => {
 
 // Task 1 – Get all books
 public_users.get('/', (req, res) => {
-  res.status(200).json(JSON.stringify(books, null, 4));
+  res.status(200).json(books);
 });
 
 // Task 2 – Get book by ISBN
